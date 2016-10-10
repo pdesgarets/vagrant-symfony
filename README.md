@@ -90,12 +90,25 @@ If you visit your site and you get the following error message:
 You are not allowed to access this file. Check app_dev.php for more information.
 ```
 
-You have to remove the following lines from `web/app_dev.php`:
+You have to replace the following lines from `web/app_dev.php`:
 
 ```php
 if (isset($_SERVER['HTTP_CLIENT_IP'])
     || isset($_SERVER['HTTP_X_FORWARDED_FOR'])
     || !in_array(@$_SERVER['REMOTE_ADDR'], array('127.0.0.1', 'fe80::1', '::1'))
+) {
+    header('HTTP/1.0 403 Forbidden');
+    exit('You are not allowed to access this file. Check '.basename(__FILE__).' for more information.');
+}
+```
+
+with those :
+
+```php
+if ((isset($_SERVER['HTTP_CLIENT_IP'])
+    || isset($_SERVER['HTTP_X_FORWARDED_FOR'])
+    || !(in_array(@$_SERVER['REMOTE_ADDR'], ['127.0.0.1', '::1']) || php_sapi_name() === 'cli-server'))
+    && $_ENV['SYMFONY__VAGRANT'] == '1'
 ) {
     header('HTTP/1.0 403 Forbidden');
     exit('You are not allowed to access this file. Check '.basename(__FILE__).' for more information.');
@@ -110,15 +123,21 @@ way to fix this is by changing the cache folder in the `app/AppKernel.php` file.
 At the end of the AppKernel class, add the following methods:
 
 ```php
-public function getCacheDir()
-{
-    return '/tmp/symfony/cache/'. $this->environment;
-}
+    public function getCacheDir()
+    {
+        if (getenv('SYMFONY__VAGRANT') === '1') {
+            return '/tmp/symfony/cache/'.$this->getEnvironment();
+        }
+        return dirname(__DIR__).'/var/cache/'.$this->getEnvironment();
+    }
 
-public function getLogDir()
-{
-    return '/tmp/symfony/log/'. $this->environment;
-}
+    public function getLogDir()
+    {
+        if (getenv('SYMFONY__VAGRANT') === '1') {
+            return '/tmp/symfony/logs/';
+        }
+        return dirname(__DIR__).'/var/logs';
+    }
 ```
 
 This will change the location of the `cache` and `log` directories you normally

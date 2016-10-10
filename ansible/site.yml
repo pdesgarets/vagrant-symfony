@@ -1,6 +1,6 @@
 ---
 - hosts: all
-  sudo:  true
+  become: true
   vars:
     doc_root: /var/www/web
     sys_packages:
@@ -18,14 +18,20 @@
       - { name: memcached, package: php5-memcached }
       - { name: sqlite, package: php5-sqlite }
       - { name: gd, package: php5-gd }
+      - { name: xdebug, package: php5-xdebug }
     php_extensions:
       - { name: "jsmin", package: "pecl.php.net/jsmin-beta" }
       - { name: "mongo", package: "pecl.php.net/mongo" }
       - { name: "xhprof", package: "pecl.php.net/xhprof-beta" }
+    php_env:
+      - { key: "SYMFONY__VAGRANT", value: "true"}
+    bash_env:
+      - { key: "SYMFONY__VAGRANT", value: "1"}
     php_ppa: php5
     nodejs:
       version: _5.x
       packages: [casperjs, phantomjs, bower, gulp]
+    xdebug_key: ~
   roles:
     - init
     - nginx
